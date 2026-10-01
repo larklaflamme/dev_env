@@ -1,0 +1,11 @@
+# atuin (dev_env) — shell history in SQLite. Ctrl-R to search.
+# Sync is OFF unless you run `atuin register` / `atuin login` (end-to-end encrypted).
+style = "compact"
+inline_height = 20
+show_preview = true
+enter_accept = false          # Enter puts the command on the line; edit before running
+filter_mode_shell_up_key_binding = "session"
+search_mode = "fuzzy"
+update_check = false
+secrets_filter = true         # never record lines that look like AWS keys, tokens, etc.
+history_filter = ["^export .*TOKEN", "^export .*SECRET", "^export .*PASSWORD"]

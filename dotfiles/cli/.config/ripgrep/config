@@ -1,0 +1,9 @@
+# ripgrep defaults (dev_env) — loaded via $RIPGREP_CONFIG_PATH. One flag per line.
+--smart-case
+--hidden
+--glob=!.git/
+--glob=!node_modules/
+--glob=!.venv/
+--glob=!target/
+--max-columns=200
+--max-columns-preview

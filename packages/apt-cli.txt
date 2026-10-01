@@ -1,0 +1,54 @@
+# Command-line tools from Ubuntu's archive (module: cli)
+# Stable, offline-friendly core. Fast-moving tools come from mise (see mise-tools.txt).
+
+# Shell
+zsh
+tmux
+stow                # symlinks dotfiles/ into $HOME
+direnv              # per-directory .envrc
+
+# Modern replacements available in noble
+ripgrep             # rg   -> grep
+fd-find             # fd   -> find      (binary is fdfind; we symlink fd)
+bat                 # bat  -> cat       (binary is batcat; we symlink bat)
+eza                 # eza  -> ls / tree
+zoxide              # z    -> cd
+btop                # btop -> top / htop
+ncdu                # interactive du
+hexyl               # hex viewer -> xxd/hexdump
+
+# Data wrangling
+jq
+moreutils           # sponge, ts, vipe, parallel...
+pv
+entr                # run a command when files change
+
+# Networking
+curl
+wget
+httpie
+mtr-tiny
+nmap
+netcat-openbsd
+dnsutils
+iperf3
+socat
+openssh-client
+rsync
+
+# System
+htop
+tree
+lsof
+psmisc
+sysstat
+iotop-c
+nvtop               # GPU monitor (NVIDIA/AMD/Intel)
+
+# Linters / editing support
+shellcheck
+shfmt
+xclip
+wl-clipboard
+python3-venv
+python3-pip

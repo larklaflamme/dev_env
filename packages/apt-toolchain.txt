@@ -1,0 +1,54 @@
+# Build-from-source toolchain (module: toolchain)
+# Compilers, linkers, build systems
+build-essential
+clang
+lld
+mold                # very fast linker (Rust/C++), opt-in via ~/.cargo/config.toml
+cmake
+ninja-build
+meson
+pkg-config
+autoconf
+automake
+libtool
+gettext
+bison
+flex
+ccache
+
+# Debugging / tracing / profiling
+gdb
+lldb
+valgrind
+strace
+ltrace
+linux-tools-generic # perf
+
+# Headers commonly needed to build Python/Rust/Node native extensions
+libssl-dev
+zlib1g-dev
+libbz2-dev
+libreadline-dev
+libsqlite3-dev
+libncurses-dev
+libffi-dev
+liblzma-dev
+tk-dev
+uuid-dev
+libgdbm-dev
+libgdbm-compat-dev
+libxml2-dev
+libxmlsec1-dev
+libyaml-dev
+libcurl4-openssl-dev
+
+# Archives & misc
+unzip
+zip
+p7zip-full
+xz-utils
+zstd
+file
+patch
+man-db
+manpages-dev

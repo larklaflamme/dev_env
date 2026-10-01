@@ -1,0 +1,218 @@
+#!/usr/bin/env bash
+# devenv — day-2 companion for the dev_env kit (symlinked into ~/.local/bin by install.sh).
+#
+#   devenv doctor            check every tool, shell, docker, git, fonts
+#   devenv update            update everything (apt, mise, rust, go, conda, uv, omz, nvim...)
+#   devenv post              interactive: git identity, SSH key, GitHub login, commit signing
+#   devenv aliases           show which classic commands map to which modern tools
+#   devenv install [mods]    run install.sh (same args)
+#   devenv list              list install modules
+#   devenv cd                print the repo path   (cd "$(devenv cd)")
+set -uo pipefail
+
+self="$(readlink -f "${BASH_SOURCE[0]}")"
+DEVENV_ROOT="$(cd "$(dirname "$self")/.." && pwd)"
+export DEVENV_ROOT
+[[ -t 1 ]] && export DEVENV_COLOR=1
+# shellcheck source=lib/common.sh
+source "$DEVENV_ROOT/lib/common.sh"
+
+# ------------------------------------------------------------------ doctor
+check() {   # check LABEL CMD [VERSION_CMD...]
+  local label="$1" cmd="$2"; shift 2
+  if have "$cmd"; then
+    local v=""
+    if (($#)); then v="$("$@" 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)"; fi
+    printf '  %s✓%s %-16s %s\n' "$C_G" "$C_0" "$label" "${v:-ok}"
+  else
+    printf '  %s✗%s %-16s %smissing%s\n' "$C_R" "$C_0" "$label" "$C_R" "$C_0"; DOCTOR_FAIL=$((DOCTOR_FAIL + 1))
+  fi
+}
+flag() {    # flag LABEL TEST-RESULT(0/1) HINT
+  if [[ "$2" == 0 ]]; then printf '  %s✓%s %s\n' "$C_G" "$C_0" "$1"
+  else printf '  %s!%s %-30s %s%s%s\n' "$C_Y" "$C_0" "$1" "$C_D" "$3" "$C_0"; DOCTOR_WARN=$((DOCTOR_WARN + 1)); fi
+}
+
+cmd_doctor() {
+  DOCTOR_FAIL=0 DOCTOR_WARN=0
+  log "shell";      check zsh zsh zsh --version
+  [[ -d "$HOME/.oh-my-zsh" ]];                flag "oh-my-zsh installed" $? "devenv install zsh"
+  check starship starship starship --version; check tmux tmux tmux -V
+  check atuin atuin atuin --version; check zoxide zoxide zoxide --version; check fzf fzf fzf --version
+  check direnv direnv direnv version; check mise mise mise --version
+  log "modern replacements"
+  check "eza (ls)" eza eza --version;       check "bat (cat)" bat bat --version
+  check "rg (grep)" rg rg --version;        check "fd (find)" fd fd --version
+  check "sd (sed)" sd sd --version;         check "dust (du)" dust dust --version
+  check "duf (df)" duf duf --version;       check "procs (ps)" procs procs --version
+  check "btop (top)" btop btop --version;   check "doggo (dig)" doggo doggo --version
+  check "gping (ping)" gping gping --version; check "delta (diff)" delta delta --version
+  check "xh (curl)" xh xh --version;        check "tldr (man)" tldr tldr --version
+  check "yazi" yazi yazi --version;         check lazygit lazygit lazygit --version
+  check lazydocker lazydocker lazydocker --version; check jq jq jq --version; check yq yq yq --version
+  check just just just --version;           check hyperfine hyperfine hyperfine --version
+  log "languages"
+  check git git git --version;              check gh gh gh --version
+  check nvim nvim nvim --version;           check gcc gcc gcc -dumpfullversion
+  check clang clang clang --version;        check conda "$HOME/miniconda3/bin/conda" "$HOME/miniconda3/bin/conda" --version
+  check uv uv uv --version;                 check ruff ruff ruff --version
+  check rustc rustc rustc --version;        check cargo cargo cargo --version
+  check go go go version;                   check gopls gopls gopls version
+  check node node node --version;           check pnpm pnpm pnpm --version; check bun bun bun --version
+  log "containers"
+  check docker docker docker --version
+  if have docker; then
+    docker compose version >/dev/null 2>&1; flag "docker compose v2" $? "apt install docker-compose-plugin"
+    id -nG "$USER" | grep -qw docker;       flag "user in docker group" $? "log out/in after install"
+    docker info >/dev/null 2>&1;            flag "docker daemon reachable" $? "sudo systemctl start docker (or re-login)"
+  fi
+  log "machine"
+  [[ "$(getent passwd "$USER" | cut -d: -f7)" == */zsh ]]; flag "login shell is zsh" $? "chsh -s \$(which zsh)"
+  fc-list 2>/dev/null | grep -qi "Nerd Font";  flag "Nerd Font installed" $? "./install.sh fonts"
+  [[ -n "$(git config --global user.email)" ]]; flag "git identity set" $? "devenv post"
+  [[ -f "$HOME/.ssh/id_ed25519" ]];           flag "SSH key present" $? "devenv post"
+  gh auth status >/dev/null 2>&1;             flag "GitHub CLI logged in" $? "devenv post"
+  if lspci 2>/dev/null | grep -qi nvidia; then
+    nvidia-smi >/dev/null 2>&1;               flag "NVIDIA driver loaded" $? "opt in: devenv install --gpu drivers && reboot"
+    apt-mark showhold 2>/dev/null | grep -q nvidia && info "  (NVIDIA driver packages are on apt hold)"
+  fi
+  [[ ! -f /var/run/reboot-required ]];        flag "no reboot pending" $? "sudo reboot"
+
+  echo
+  if ((DOCTOR_FAIL == 0 && DOCTOR_WARN == 0)); then ok "all good ✨"
+  else info "$DOCTOR_FAIL missing, $DOCTOR_WARN warnings"; fi
+  ((DOCTOR_FAIL == 0))
+}
+
+# ------------------------------------------------------------------ update
+step() { log "$1"; shift; "$@" || warn "step failed: $*"; }
+
+cmd_update() {
+  sudo -v
+  step "apt"   bash -c 'sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y && sudo apt-get autoremove -y -qq'
+  have snap    && step "snap" sudo snap refresh
+  have mise    && step "mise self-update" mise self-update -y
+  have mise    && step "mise tools" mise upgrade
+  have rustup  && step "rust toolchain" rustup update
+  have cargo-install-update && step "cargo tools" cargo install-update -a
+  step "go toolchain + tools" bash "$DEVENV_ROOT/lib/run-module.sh" go
+  if [[ -x "$HOME/miniconda3/bin/conda" ]]; then
+    step "conda (base)" "$HOME/miniconda3/bin/conda" update -n base -y -q conda
+  fi
+  have uv      && step "uv" uv self update
+  have uv      && step "uv tools" uv tool upgrade --all
+  if [[ -d "$HOME/.oh-my-zsh" ]]; then
+    step "oh-my-zsh" env ZSH="$HOME/.oh-my-zsh" zsh "$HOME/.oh-my-zsh/tools/upgrade.sh"
+    local p
+    for p in "$HOME"/.oh-my-zsh/custom/plugins/*/; do
+      [[ -d "$p/.git" ]] && git -C "$p" pull --ff-only --quiet
+    done
+    ok "zsh plugins updated"
+  fi
+  # regenerate tool completions next shell start
+  rm -f "${XDG_DATA_HOME:-$HOME/.local/share}"/zsh/site-functions/_*
+  step "neovim + plugins" bash "$DEVENV_ROOT/lib/run-module.sh" neovim
+  have tldr    && step "tldr pages" tldr --update
+  echo; ok "update finished"
+  [[ -f /var/run/reboot-required ]] && warn "reboot required"
+  return 0
+}
+
+# ------------------------------------------------------------------ post
+ask() { local p="$1" d="${2:-}" a; read -r -p "$p${d:+ [$d]}: " a; echo "${a:-$d}"; }
+
+cmd_post() {
+  log "git identity"
+  local name email
+  name="$(ask "Full name" "$(git config --global user.name || true)")"
+  email="$(ask "Email (as on GitHub)" "$(git config --global user.email || true)")"
+  git config --global user.name "$name"
+  git config --global user.email "$email"
+  ok "git: $name <$email>   (saved in ~/.gitconfig)"
+
+  log "SSH key"
+  local key="$HOME/.ssh/id_ed25519"
+  if [[ -f "$key" ]]; then ok "exists: $key"
+  else
+    mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+    ssh-keygen -t ed25519 -C "$email" -f "$key"
+    ok "created $key"
+  fi
+
+  log "GitHub CLI"
+  if gh auth status >/dev/null 2>&1; then ok "already logged in"
+  else
+    gh auth login --hostname github.com --git-protocol ssh --web --skip-ssh-key \
+      --scopes admin:public_key,admin:ssh_signing_key || warn "gh login skipped"
+  fi
+  if gh auth status >/dev/null 2>&1; then
+    local title; title="$(hostname) $(date +%Y-%m)"
+    if gh ssh-key add "$key.pub" --type authentication --title "$title" 2>/dev/null; then ok "SSH auth key uploaded"
+    else info "auth key already on GitHub"; fi
+    if gh ssh-key add "$key.pub" --type signing --title "$title (signing)" 2>/dev/null; then ok "SSH signing key uploaded"
+    else info "signing key already on GitHub (or needs: gh auth refresh -s admin:ssh_signing_key)"; fi
+  fi
+
+  log "commit signing (SSH)"
+  if [[ "$(ask "Sign all commits and tags with your SSH key? (y/n)" y)" == y ]]; then
+    git config --global gpg.format ssh
+    git config --global user.signingkey "$key.pub"
+    git config --global commit.gpgsign true
+    git config --global tag.gpgsign true
+    mkdir -p "$HOME/.config/git"
+    echo "$email $(cat "$key.pub")" >"$HOME/.config/git/allowed_signers"
+    git config --global gpg.ssh.allowedSignersFile "$HOME/.config/git/allowed_signers"
+    ok "signing on — verify later with: git log --show-signature -1"
+  fi
+
+  log "optional"
+  info "atuin history sync across machines:   atuin register   (or: atuin login)"
+  info "starter conda env:                    mkenv dev python=3.13"
+  info "test ssh:                             ssh -T git@github.com"
+}
+
+# ------------------------------------------------------------------ aliases
+cmd_aliases() {
+  local level
+  level="$(zsh -ic 'echo $DEVENV_ALIASES' 2>/dev/null | tail -1)"
+  log "classic -> modern   (DEVENV_ALIASES=${level:-?}; change it in ~/.zshrc.pre.local)"
+  printf '  %-7s %-6s %-8s %s\n' TIER OLD NEW NOTES
+  local row
+  while IFS='|' read -r tier old new notes; do
+    if have "${new%% *}"; then row="$C_G"; else row="$C_D"; fi
+    printf '  %-7s %-6s %s%-8s%s %s\n' "$tier" "$old" "$row" "$new" "$C_0" "$notes"
+  done <<'EOF'
+safe|ls|eza|icons, git status column; ll / la / lt / lT / lm variants
+safe|tree|eza|eza --tree, honours .gitignore
+safe|cat|bat|syntax highlighting; plain output when piped
+safe|cd|zoxide|cd foo jumps to the best match; cdi = interactive
+safe|top|btop|also htop -> btop
+safe|vim|nvim|also vi -> nvim
+all|grep|rg|recursive by default, respects .gitignore; -r means --replace!
+all|find|fd|fd PATTERN [DIR], regex, respects .gitignore
+all|sed|sd|sd 'from' 'to' file — edits files in place
+all|du|dust|tree-shaped disk usage
+all|df|duf|pretty mounts table
+all|ps|procs|procs <keyword> to filter
+all|dig|doggo|doggo example.com MX
+all|ping|gping|live latency graph
+all|diff|delta|side-by-side: delta -s a b
+new|curl|xh|xh httpbin.org/json   (curl stays curl)
+new|man|tldr|`help tar` for examples (man stays man)
+new|history|atuin|Ctrl-R
+EOF
+  echo
+  info "bypass any alias:  \\grep ...   or   command grep ..."
+}
+
+# ------------------------------------------------------------------ main
+case "${1:-help}" in
+  doctor)  cmd_doctor ;;
+  update)  cmd_update ;;
+  post)    cmd_post ;;
+  aliases) cmd_aliases ;;
+  install) shift; exec bash "$DEVENV_ROOT/install.sh" "$@" ;;
+  list)    exec bash "$DEVENV_ROOT/install.sh" --list ;;
+  cd)      echo "$DEVENV_ROOT" ;;
+  *)       sed -n '2,11p' "$self" | sed 's/^# \{0,1\}//' ;;
+esac

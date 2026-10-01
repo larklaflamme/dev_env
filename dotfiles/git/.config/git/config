@@ -1,0 +1,77 @@
+# ~/.config/git/config — shared git defaults, managed by dev_env.
+# Identity, signing key and anything machine-specific go in ~/.gitconfig
+# (git reads both; `git config --global` writes to ~/.gitconfig).
+
+[init]
+	defaultBranch = main
+[core]
+	editor = nvim
+	pager = delta
+	autocrlf = input
+	whitespace = trailing-space,space-before-tab
+	untrackedCache = true
+	fsmonitor = false
+[interactive]
+	diffFilter = delta --color-only
+[delta]
+	navigate = true            # n / N jump between files
+	line-numbers = true
+	side-by-side = false       # toggle per-run: git -c delta.side-by-side=true diff
+	hyperlinks = true
+	syntax-theme = OneHalfDark
+[diff]
+	algorithm = histogram
+	colorMoved = default
+	mnemonicPrefix = true
+	renames = true
+[merge]
+	conflictstyle = zdiff3
+[pull]
+	rebase = true
+[rebase]
+	autoStash = true
+	autoSquash = true
+	updateRefs = true
+[push]
+	autoSetupRemote = true
+	followTags = true
+[fetch]
+	prune = true
+	pruneTags = true
+[rerere]
+	enabled = true
+	autoupdate = true
+[branch]
+	sort = -committerdate
+[tag]
+	sort = version:refname
+[column]
+	ui = auto
+[help]
+	autocorrect = prompt
+[commit]
+	verbose = true
+[url "git@github.com:"]
+	pushInsteadOf = https://github.com/   # clone over https, push over ssh
+
+[alias]
+	st = status -sb
+	sw = switch
+	co = checkout
+	br = branch -vv
+	lg = log --graph --pretty=format:'%C(auto)%h%d %s %C(dim)%an, %ar' --all
+	last = log -1 HEAD --stat
+	unstage = restore --staged
+	amend = commit --amend --no-edit
+	undo = reset --soft HEAD~1
+	wip = !git add -A && git commit -m 'wip' --no-verify
+	fixup = !git log -n 30 --oneline | fzf | cut -d' ' -f1 | xargs -r git commit --fixup
+	cleanup = !git branch --merged | grep -vE '^\\*|main|master|develop' | xargs -r git branch -d
+	root = rev-parse --show-toplevel
+	aliases = !git config --get-regexp ^alias\\. | sed 's/^alias\\.//'
+
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true

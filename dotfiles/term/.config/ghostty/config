@@ -1,0 +1,26 @@
+# Ghostty (dev_env).  Reload: Ctrl+Shift+,   Docs: ghostty +show-config --default --docs
+font-family = JetBrainsMono Nerd Font
+font-size = 12
+font-feature = calt
+font-feature = liga
+
+# Themes: ghostty +list-themes   (pick one and uncomment)
+# theme = <name>
+background-opacity = 0.96
+window-padding-x = 10
+window-padding-y = 8
+window-decoration = auto
+cursor-style = block
+cursor-style-blink = false
+mouse-hide-while-typing = true
+
+copy-on-select = clipboard
+confirm-close-surface = false
+shell-integration = zsh
+shell-integration-features = cursor,sudo,title
+
+# Quake-style dropdown terminal. Global hotkeys need desktop-portal GlobalShortcuts
+# support, which not every GNOME release has — uncomment to try.
+# keybind = global:ctrl+grave_accent=toggle_quick_terminal
+keybind = ctrl+shift+enter=new_split:right
+keybind = ctrl+shift+backslash=new_split:down

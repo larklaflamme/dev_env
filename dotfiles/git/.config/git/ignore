@@ -1,0 +1,34 @@
+# Global gitignore (dev_env). Project-specific ignores belong in each repo.
+
+# Secrets & local env
+.env
+.env.*
+!.env.example
+.envrc
+.direnv/
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+
+# Editors / OS
+*.swp
+*~
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Misc
+.cache/
+*.log

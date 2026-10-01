@@ -1,0 +1,37 @@
+# Fast-moving CLI tools, installed as prebuilt binaries via mise (module: cli).
+# One per line: name or name@version (default @latest). Pin versions here if you like.
+# Each tool installs independently; a failure is a warning, never fatal.
+
+fzf               # fuzzy finder: Ctrl-T files, Alt-C dirs, ** completion
+starship          # cross-shell prompt
+atuin             # shell history in SQLite: Ctrl-R search, stats, optional sync
+lazygit           # git TUI
+lazydocker        # docker TUI
+delta             # git pager with syntax highlighting -> diff
+yazi              # terminal file manager
+tree-sitter       # LazyVim needs the CLI
+
+# Modern replacements for classic tools
+dust              # -> du
+duf               # -> df
+procs             # -> ps
+sd                # -> sed (find & replace)
+xh                # -> curl/httpie (fast HTTP client)
+doggo             # -> dig
+gping             # -> ping (with a graph)
+tealdeer          # tldr pages -> man (quick examples)
+bottom            # btm, alt system monitor
+
+# Dev workflow
+just              # command runner (Makefile without the footguns)
+watchexec         # re-run on file change
+hyperfine         # benchmarking
+tokei             # code statistics
+yq                # jq for YAML/TOML/XML
+glow              # render markdown in the terminal
+dive              # explore docker image layers
+
+# Security
+gitleaks          # find secrets before you push them
+age               # simple modern file encryption
+sops              # encrypted secrets in git

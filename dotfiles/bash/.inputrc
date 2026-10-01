@@ -1,0 +1,12 @@
+# ~/.inputrc — readline settings (bash prompt, python REPL, psql, ...)
+$include /etc/inputrc
+
+set completion-ignore-case on        # Tab completion ignores case
+set show-all-if-ambiguous on         # one Tab lists matches instead of two
+set colored-stats on                 # color completions by file type
+set mark-symlinked-directories on
+set colored-completion-prefix on
+
+# Up/Down search history by what you've already typed
+"\e[A": history-search-backward
+"\e[B": history-search-forward
