@@ -63,18 +63,18 @@ cmd_doctor() {
   check docker docker docker --version
   if have docker; then
     docker compose version >/dev/null 2>&1; flag "docker compose v2" $? "apt install docker-compose-plugin"
-    id -nG "$USER" | grep -qw docker;       flag "user in docker group" $? "log out/in after install"
+    id -nG "$USER" | grep -w docker >/dev/null;       flag "user in docker group" $? "log out/in after install"
     docker info >/dev/null 2>&1;            flag "docker daemon reachable" $? "sudo systemctl start docker (or re-login)"
   fi
   log "machine"
   [[ "$(getent passwd "$USER" | cut -d: -f7)" == */zsh ]]; flag "login shell is zsh" $? "chsh -s \$(which zsh)"
-  fc-list 2>/dev/null | grep -qi "Nerd Font";  flag "Nerd Font installed" $? "./install.sh fonts"
+  fc-list 2>/dev/null | grep -i "Nerd Font" >/dev/null;  flag "Nerd Font installed" $? "./install.sh fonts"
   [[ -n "$(git config --global user.email)" ]]; flag "git identity set" $? "devenv post"
   [[ -f "$HOME/.ssh/id_ed25519" ]];           flag "SSH key present" $? "devenv post"
   gh auth status >/dev/null 2>&1;             flag "GitHub CLI logged in" $? "devenv post"
-  if lspci 2>/dev/null | grep -qi nvidia; then
+  if lspci 2>/dev/null | grep -i nvidia >/dev/null; then
     nvidia-smi >/dev/null 2>&1;               flag "NVIDIA driver loaded" $? "opt in: devenv install --gpu drivers && reboot"
-    apt-mark showhold 2>/dev/null | grep -q nvidia && info "  (NVIDIA driver packages are on apt hold)"
+    apt-mark showhold 2>/dev/null | grep nvidia >/dev/null && info "  (NVIDIA driver packages are on apt hold)"
   fi
   [[ ! -f /var/run/reboot-required ]];        flag "no reboot pending" $? "sudo reboot"
 
