@@ -10,7 +10,7 @@ run() {
     conflicts="$(dpkg --get-selections docker.io docker-compose docker-compose-v2 docker-doc \
       podman-docker containerd runc 2>/dev/null | awk '$2=="install"{print $1}' || true)"
     # shellcheck disable=SC2086
-    [[ -n "$conflicts" ]] && sudo apt-get remove -y -qq $conflicts
+    [[ -n "$conflicts" ]] && sudo_apt remove -y -qq $conflicts
 
     sudo install -m 0755 -d /etc/apt/keyrings
     sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc

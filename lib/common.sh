@@ -49,28 +49,35 @@ devenv_path() {
 devenv_path
 
 # ---------- apt ----------
+# sudo resets the environment, so DEBIAN_FRONTEND must be passed explicitly or
+# debconf prompts (iperf3, wireshark, ...) hang the run. Keep existing config files.
+sudo_apt() {
+  sudo DEBIAN_FRONTEND=noninteractive apt-get \
+    -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold "$@"
+}
+
 apt_update_once() {
   local stamp="${DEVENV_STATE}/apt-updated-${DEVENV_RUN_ID:-$$}"
   [[ -f "$stamp" ]] && return 0
-  sudo apt-get update -qq
+  sudo_apt update -qq
   mkdir -p "$DEVENV_STATE" && touch "$stamp"
 }
 apt_force_update() { rm -f "${DEVENV_STATE}/apt-updated-${DEVENV_RUN_ID:-$$}"; apt_update_once; }
 
 apt_install() {
   apt_update_once
-  sudo apt-get install -y -qq --no-install-recommends "$@"
+  sudo_apt install -y -qq --no-install-recommends "$@"
 }
 
 # Bulk install; if that fails, retry one-by-one so a single missing package
 # never blocks the rest.
 apt_install_best_effort() {
   apt_update_once
-  if sudo apt-get install -y -qq --no-install-recommends "$@"; then return 0; fi
+  if sudo_apt install -y -qq --no-install-recommends "$@"; then return 0; fi
   warn "bulk apt install failed; retrying packages individually"
   local p failed=()
   for p in "$@"; do
-    sudo apt-get install -y -qq --no-install-recommends "$p" >/dev/null 2>&1 || failed+=("$p")
+    sudo_apt install -y -qq --no-install-recommends "$p" >/dev/null 2>&1 || failed+=("$p")
   done
   if ((${#failed[@]})); then warn "apt packages not installed: ${failed[*]}"; fi
   return 0

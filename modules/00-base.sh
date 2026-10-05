@@ -30,8 +30,8 @@ run() {
     apt_force_update
   fi
   gpu_driver_guard
-  sudo apt-get full-upgrade -y -qq
-  sudo apt-get autoremove -y -qq
+  sudo_apt full-upgrade -y -qq
+  sudo_apt autoremove -y -qq
 
   apt_install git stow unzip fontconfig
 

@@ -33,7 +33,7 @@ run() {
     apt_install "$DEVENV_NVIDIA_DRIVER"
     ok "installed $DEVENV_NVIDIA_DRIVER"
   else
-    sudo ubuntu-drivers install
+    sudo DEBIAN_FRONTEND=noninteractive ubuntu-drivers install
     ok "installed Ubuntu's recommended driver"
   fi
   warn "reboot before nvidia-smi will work (Secure Boot may ask you to enrol a MOK key)"
